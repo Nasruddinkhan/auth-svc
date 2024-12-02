@@ -11,17 +11,28 @@ import org.springframework.stereotype.Component;
 @Component
 public class CustomGraphQLExceptionResolver extends DataFetcherExceptionResolverAdapter {
 
+    @Override
     @Nullable
     protected GraphQLError resolveToSingleError(Throwable ex, DataFetchingEnvironment env) {
-        if (ex instanceof UserNotFoundException) {
-            return GraphqlErrorBuilder.newError()
-                    .message(ex.getMessage())
-                    .errorType(ErrorType.NOT_FOUND)
-                    .build();
-        }
-        return GraphqlErrorBuilder.newError()
-                .message("An unexpected error occurred: " + ex.getMessage())
-                .errorType(ErrorType.INTERNAL_ERROR)
+        ErrorType errorType = determineErrorType(ex);
+        String message = buildErrorMessage(ex);
+        return GraphqlErrorBuilder.newError(env)
+                .message(message)
+                .errorType(errorType)
                 .build();
+    }
+
+    private ErrorType determineErrorType(Throwable ex) {
+        if (ex instanceof UserNotFoundException) {
+            return ErrorType.NOT_FOUND;
+        }
+        return ErrorType.INTERNAL_ERROR;
+    }
+
+    private String buildErrorMessage(Throwable ex) {
+        if (ex instanceof UserNotFoundException) {
+            return ex.getMessage();
+        }
+        return "An unexpected error occurred: " + ex.getMessage();
     }
 }
